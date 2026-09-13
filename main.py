@@ -26,43 +26,47 @@ def start_msg(message):
 @bot.message_handler(func=lambda message: True)
 def download_reel(message):
     raw_text = message.text.strip()
-    
-    # URL me se faltu tracking parameters (?stkn=... etc) saaf karna
     match = re.search(r'(https?://(?:www\.)?instagram\.com/(?:reel|p|share)/[a-zA-Z0-9_-]+)', raw_text)
     if not match:
         bot.reply_to(message, "⚠️ Kripya valid Instagram Reel URL bhejein.")
         return
 
     clean_url = match.group(1)
-    wait_msg = bot.reply_to(message, "⏳ Reel download ho rahi hai, kripya intezar karein...")
+    wait_msg = bot.reply_to(message, "⏳ Reel download ho rahi hai, thoda intezar karein...")
 
-    # Method 1: Primary API
+    # Method: Cobalt public instance (Most stable Instagram parser)
     try:
-        api_url = f"https://api.siputzx.my.id/api/d/igdl?url={clean_url}"
-        res = requests.get(api_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15).json()
-        if res.get("status") and res.get("data"):
-            video_url = res["data"][0].get("url")
-            bot.send_video(message.chat.id, video_url, caption="✅ Downloaded successfully!")
+        cobalt_payload = {
+            "url": clean_url,
+            "videoQuality": "720"
+        }
+        cobalt_headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }
+        res = requests.post("https://cobalt-backend.canine.tools/", json=cobalt_payload, headers=cobalt_headers, timeout=20).json()
+        
+        video_url = res.get("url")
+        if video_url:
+            bot.send_video(message.chat.id, video_url, caption="✅ Lo bhai, ho gayi download!")
             return
     except Exception:
         pass
 
-    # Method 2: Backup fast engine
+    # Fallback Direct Mirror
     try:
-        backup_url = f"https://widipe.com/download/ig?url={clean_url}"
-        res2 = requests.get(backup_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15).json()
-        if res2.get("status") and res2.get("result"):
-            results = res2["result"]
-            video_url = results[0]["url"] if isinstance(results, list) else results.get("url")
-            if video_url:
-                bot.send_video(message.chat.id, video_url, caption="✅ Downloaded successfully!")
-                return
+        mirror_url = f"https://api.tiklydown.eu.org/api/download?url={clean_url}"
+        res2 = requests.get(mirror_url, timeout=15).json()
+        video_url2 = res2.get("videoUrl") or res2.get("url")
+        if video_url2:
+            bot.send_video(message.chat.id, video_url2, caption="✅ Lo bhai, ho gayi download!")
+            return
     except Exception:
         pass
 
-    bot.reply_to(message, "❌ Video download nahi ho payi. Ek baar doosri reel ka link try karein.")
+    bot.reply_to(message, "❌ Video download nahi ho payi. Ek baar koi doosri reel ka link bhej kar check karein.")
 
 if __name__ == "__main__":
     threading.Thread(target=run_server, daemon=True).start()
     bot.infinity_polling()
-            
+    
