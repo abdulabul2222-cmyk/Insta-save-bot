@@ -1,9 +1,9 @@
 import telebot
-import requests
+import os
 import re
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import os
+import yt_dlp
 
 BOT_TOKEN = "8713209453:AAEyFtGhTI54i9COQbIKlPoBVYD4lJLfYmA"
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -34,39 +34,30 @@ def download_reel(message):
     clean_url = match.group(1)
     wait_msg = bot.reply_to(message, "⏳ Reel download ho rahi hai, thoda intezar karein...")
 
-    # Method: Cobalt public instance (Most stable Instagram parser)
-    try:
-        cobalt_payload = {
-            "url": clean_url,
-            "videoQuality": "720"
-        }
-        cobalt_headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        }
-        res = requests.post("https://cobalt-backend.canine.tools/", json=cobalt_payload, headers=cobalt_headers, timeout=20).json()
-        
-        video_url = res.get("url")
-        if video_url:
-            bot.send_video(message.chat.id, video_url, caption="✅ Lo bhai, ho gayi download!")
-            return
-    except Exception:
-        pass
+    file_name = f"reel_{message.chat.id}.mp4"
+    ydl_opts = {
+        'format': 'best',
+        'outtmpl': file_name,
+        'quiet': True,
+        'no_warnings': True,
+    }
 
-    # Fallback Direct Mirror
     try:
-        mirror_url = f"https://api.tiklydown.eu.org/api/download?url={clean_url}"
-        res2 = requests.get(mirror_url, timeout=15).json()
-        video_url2 = res2.get("videoUrl") or res2.get("url")
-        if video_url2:
-            bot.send_video(message.chat.id, video_url2, caption="✅ Lo bhai, ho gayi download!")
-            return
-    except Exception:
-        pass
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([clean_url])
 
-    bot.reply_to(message, "❌ Video download nahi ho payi. Ek baar koi doosri reel ka link bhej kar check karein.")
+        if os.path.exists(file_name):
+            with open(file_name, 'rb') as video:
+                bot.send_video(message.chat.id, video, caption="✅ Lo bhai, ho gayi download!")
+            os.remove(file_name)
+        else:
+            bot.reply_to(message, "❌ Video download nahi ho payi.")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error: {str(e)[:100]}")
+        if os.path.exists(file_name):
+            os.remove(file_name)
 
 if __name__ == "__main__":
     threading.Thread(target=run_server, daemon=True).start()
     bot.infinity_polling()
-    
+        
