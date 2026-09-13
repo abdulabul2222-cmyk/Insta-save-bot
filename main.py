@@ -1,7 +1,8 @@
 import telebot
 import requests
 
-BOT_TOKEN = "APNA_BOT_TOKEN_YAHAN_DAALEIN"
+BOT_TOKEN = "8713209453:AAEyFtGhTI54i9COQbIKlPoBVYD4lJLfYmA"
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])
