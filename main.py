@@ -1,6 +1,5 @@
 import telebot
 import requests
-import re
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import os
@@ -32,17 +31,20 @@ def download_reel(message):
 
     wait_msg = bot.reply_to(message, "⏳ Reel download ho rahi hai, kripya intezar karein...")
     try:
-        api_url = f"https://api.vkrdownloader.xyz/v1/dl?url={url}"
-        res = requests.get(api_url).json()
-        if res.get("status") and res.get("data", {}).get("downloads"):
-            video_url = res["data"]["downloads"][0]["url"]
+        # Working Instagram DL API
+        api_url = f"https://api.siputzx.my.id/api/d/igdl?url={url}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        res = requests.get(api_url, headers=headers, timeout=20).json()
+
+        if res.get("status") and res.get("data"):
+            video_url = res["data"][0].get("url")
             bot.send_video(message.chat.id, video_url, caption="✅ Here is your reel!")
         else:
-            bot.reply_to(message, "❌ Video download nahi ho payi. Reel private ho sakti hai ya link expired hai.")
+            bot.reply_to(message, "❌ Video download nahi ho payi. Reel private ho sakti hai ya link invalid hai.")
     except Exception as e:
         bot.reply_to(message, f"❌ Error: {str(e)}")
 
 if __name__ == "__main__":
     threading.Thread(target=run_server, daemon=True).start()
     bot.infinity_polling()
-                     
+    
